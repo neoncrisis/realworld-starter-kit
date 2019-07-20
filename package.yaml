@@ -1,0 +1,79 @@
+name:          haskell-servant-realworld
+version:       0.0.0.0
+author:        Oz Lopez
+maintainer:    oz.lopez@superluminal.me
+
+ghc-options:
+- -fhide-source-paths
+- -freverse-errors
+- -Weverything
+- -Wno-all-missed-specialisations
+- -Wno-implicit-prelude
+- -Wno-missed-specialisations
+- -Wno-missing-exported-signatures
+- -Wno-missing-import-lists
+- -Wno-missing-local-signatures
+- -Wno-monomorphism-restriction
+- -Wno-safe
+- -Wno-unsafe
+- -Wno-missing-export-lists
+- -Wno-missing-home-modules
+
+dependencies:
+- base >=4.7 && <5
+- bytestring
+- deepseq
+- esqueleto
+- foreign-store
+- monad-logger
+- mtl
+- persistent
+- persistent-postgresql
+- persistent-template
+- resource-pool
+- safe-exceptions
+- servant
+- servant-server
+- unliftio-core
+- wai
+- warp
+
+library:
+  source-dirs: lib
+
+executable:
+  main: Main.hs
+  source-dirs:
+  - src
+  - app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  dependencies:
+  - haskell-servant-realworld
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs:
+    - src
+    - test
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N
+    dependencies:
+    - haskell-servant-realworld
+    - hedgehog
+    - tasty
+    - tasty-hunit
+    - tasty-golden
+
+  integration:
+    main: Integration.hs
+    source-dirs:
+    - src
+    - test
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N
+    dependencies:
+    - haskell-servant-realworld
+    - hedgehog
+    - tasty
+    - tasty-hunit
+    - tasty-hedgehog
+
