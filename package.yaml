@@ -5,7 +5,6 @@ maintainer:    oz.lopez@superluminal.me
 
 ghc-options:
 - -fhide-source-paths
-- -freverse-errors
 - -Weverything
 - -Wno-all-missed-specialisations
 - -Wno-implicit-prelude
@@ -21,21 +20,29 @@ ghc-options:
 
 dependencies:
 - base >=4.7 && <5
+- async
 - bytestring
 - deepseq
 - esqueleto
+- fast-logger
 - foreign-store
+- generic-lens
+- katip
+- microlens-platform
 - monad-logger
 - mtl
 - persistent
 - persistent-postgresql
 - persistent-template
-- resource-pool
 - safe-exceptions
 - servant
 - servant-server
+- text
+- unliftio
 - unliftio-core
+- unliftio-pool
 - wai
+- wai-extra
 - warp
 
 library:
