@@ -29,6 +29,7 @@ dependencies:
 - fast-logger
 - foreign-store
 - generic-lens
+- http-client
 - katip
 - lens
 - monad-logger
@@ -38,6 +39,7 @@ dependencies:
 - persistent-template
 - safe-exceptions
 - servant
+- servant-client
 - servant-server
 - text
 - unliftio
@@ -48,12 +50,11 @@ dependencies:
 - warp
 
 library:
-  source-dirs: lib
+  source-dirs: src
 
 executable:
   main: Main.hs
   source-dirs:
-  - src
   - app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   dependencies:
@@ -63,7 +64,6 @@ tests:
   spec:
     main: Spec.hs
     source-dirs:
-    - src
     - test
     ghc-options: -threaded -rtsopts -with-rtsopts=-N
     dependencies:
@@ -76,7 +76,6 @@ tests:
   integration:
     main: Integration.hs
     source-dirs:
-    - src
     - test
     ghc-options: -threaded -rtsopts -with-rtsopts=-N
     dependencies:
