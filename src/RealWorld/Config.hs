@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE RankNTypes    #-}
 module RealWorld.Config where
 
 import Control.Monad.IO.Unlift (MonadUnliftIO)
@@ -8,7 +9,6 @@ import Database.Persist.Postgresql (createPostgresqlPool)
 import Database.Persist.Sql (SqlBackend)
 import GHC.Generics (Generic)
 import UnliftIO.Pool (Pool)
-
 
 data Config = Config
   { dbPool :: !(Pool SqlBackend)

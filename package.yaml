@@ -23,13 +23,14 @@ dependencies:
 - aeson
 - async
 - bytestring
+- containers
 - deepseq
 - esqueleto
 - fast-logger
 - foreign-store
 - generic-lens
 - katip
-- microlens-platform
+- lens
 - monad-logger
 - mtl
 - persistent

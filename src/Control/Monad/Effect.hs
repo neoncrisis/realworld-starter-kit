@@ -2,5 +2,5 @@
 
 module Control.Monad.Effect where
 
-class Effect r m where
+class Monad m => Effect r m where
   eff :: r a -> m a

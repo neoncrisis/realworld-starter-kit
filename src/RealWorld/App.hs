@@ -1,31 +1,33 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE OverloadedLabels           #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RankNTypes                 #-}
 module RealWorld.App where
 
-import Control.Exception.Safe (try)
+import Control.Exception.Safe (MonadCatch, MonadThrow, try)
 import Control.Monad.Except (ExceptT (..))
 import Control.Monad.IO.Unlift (MonadIO (..), MonadUnliftIO (..), UnliftIO (..), withUnliftIO)
 import Control.Monad.Logger (MonadLogger (..))
 import Control.Monad.Reader (MonadReader, ReaderT (..), runReaderT)
 import Data.Generics.Labels ()
 import RealWorld.Config (Config)
+import RealWorld.Service.User as User (MonadUser (..), user)
 import Servant.Server (Handler (..))
 
 
 type App = AppT IO
 
 newtype AppT m a = AppT
-  { unAppT :: ReaderT Config m a
-  } deriving
+  { unAppT :: ReaderT Config m a }
+  deriving
     ( Applicative
     , Functor
     , Monad
     , MonadIO
     , MonadLogger
     , MonadReader Config
+    , MonadThrow
+    , MonadCatch
     )
 
 -- MonadUnliftIO is a *much* safer implementation along the lines of MonadBaseControl
@@ -36,6 +38,14 @@ instance MonadUnliftIO m => MonadUnliftIO (AppT m) where
     ReaderT $ \r ->
     withUnliftIO $ \u ->
       pure $ UnliftIO (unliftIO u . flip runReaderT r . unAppT)
+
+instance Monad m => MonadUser (AppT m) where
+  loginUser _    = pure user
+  registerUser _ = pure user
+  getUser _      = pure (Just user)
+  updateUser _   = pure user
+
+
 
 runAppT
   :: Config

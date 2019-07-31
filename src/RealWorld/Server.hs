@@ -3,29 +3,30 @@
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE OverloadedLabels      #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 module RealWorld.Server where
 
+import Control.Exception.Safe (MonadThrow, throwM)
+import Control.Lens ((^.))
 import Control.Monad.IO.Unlift (MonadUnliftIO, liftIO)
-import Control.Monad.Logger (logInfoNS, runChanLoggingT, runStdoutLoggingT, unChanLoggingT)
-import Control.Monad.Logger (Loc, LogLevel, LogSource, LogStr, MonadLogger)
+import Control.Monad.Logger (Loc, LogLevel, LogSource, LogStr, MonadLogger, logInfoNS,
+                             runChanLoggingT, runStdoutLoggingT, unChanLoggingT)
 import Data.Generics.Labels ()
 import Database.Persist.Sql (SqlBackend)
 import GHC.Generics (Generic)
-import Lens.Micro.Platform ((^.))
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdout)
-import RealWorld.Api (Api (..), EmailAddress (..), Token (..), User (..), UserApi (..),
-                      Username (..))
+import RealWorld.Api (Api (..), UserApi (..))
 import RealWorld.App (runToHandler)
 import RealWorld.Config (Config (..), connectDb)
+import RealWorld.Service.User (MonadUser)
+import qualified RealWorld.Service.User as User
 import Servant.Server
 import Servant.Server.Generic
 import UnliftIO.Chan (Chan, newChan)
@@ -68,70 +69,61 @@ bracketApp =
 
 
 -- | Create the WAI 'Application' representing our server
-application :: Init -> Application
-application i =
+application
+  :: ( MonadUser m
+     , MonadThrow m
+     )
+  => (forall a. m a -> Handler a)
+  -> Application
+application handle =
     logStdout
-  $ genericServeTWithContext (runToHandler (runChanLoggingT ch) cfg) server ctx
+  $ genericServeTWithContext handle server ctx
 
   where
-    cfg = Config (i ^. #dbPool)
-    ch  = i ^. #logChannel
     ctx = EmptyContext
 
 
-runServer :: MonadUnliftIO m => m ()
+runServer
+  :: ( MonadThrow m
+     , MonadUnliftIO m
+     )
+  => m ()
 runServer = runStdoutLoggingT $ bracketApp $ \i -> do
   logInfoNS "INIT" "haskell-servant-realworld"
   logInfoNS "INIT" "Listening on port 8080"
-  liftIO $ run 8080 $ application i
+
+  let
+    ch  = i ^. #logChannel
+    cfg = Config
+      { dbPool = i ^. #dbPool
+      }
+
+  liftIO
+    $ run 8080
+    $ application (handle ch cfg)
+
+  where
+    handle ch cfg = runToHandler (runChanLoggingT ch) cfg
+
 
 
 server
-  :: Monad m
+  :: ( MonadUser m
+     , MonadThrow m
+     )
   => Api (AsServerT m)
 server = Api
-  { apiUser = genericServerT userApi
+  { userApi = genericServerT UserApi
+    { loginUser, registerUser, getCurrentUser, updateUser }
   }
 
-
-userApi
-  :: Monad m
-  => UserApi (AsServerT m)
-userApi = UserApi {..}
-
   where
-    loginUser _ =
-      pure User
-        { email    = EmailAddress "jake@jake.jake"
-        , token    = Token "asdfkj0"
-        , username = Username "neoncrisis"
-        , bio      = "Hi"
-        , image    = Nothing
-        }
+    loginUser c    = User.loginUser c
+    registerUser r = User.registerUser r
+    getCurrentUser = User.getUser undefined >>= notFound
+    updateUser u   = User.updateUser u
 
-    registerUser _ =
-      pure User
-        { email    = EmailAddress "jake@jake.jake"
-        , token    = Token "asdfkj0"
-        , username = Username "neoncrisis"
-        , bio      = "Hi"
-        , image    = Nothing
-        }
 
-    getCurrentUser =
-      pure User
-        { email    = EmailAddress "jake@jake.jake"
-        , token    = Token "asdfkj0"
-        , username = Username "neoncrisis"
-        , bio      = "Hi"
-        , image    = Nothing
-        }
-
-    updateUser _ =
-      pure User
-        { email    = EmailAddress "jake@jake.jake"
-        , token    = Token "asdfkj0"
-        , username = Username "neoncrisis"
-        , bio      = "Hi"
-        , image    = Nothing
-        }
+notFound :: MonadThrow m => Maybe a -> m a
+notFound =
+  maybe (throwM err404) pure
